@@ -58,8 +58,13 @@ resource "azurerm_network_security_rule" "allow_rdp" {
   network_security_group_name = azurerm_network_security_group.this.name
 }
 
-# Associate NSG with the default subnet
-resource "azurerm_subnet_network_security_group_association" "default" {
-  subnet_id                 = azurerm_subnet.this["default"].id
+# Associate NSG with all subnets (except AzureBastionSubnet, which uses its own NSG)
+resource "azurerm_subnet_network_security_group_association" "this" {
+  for_each = {
+    for k, v in azurerm_subnet.this : k => v
+    if k != "AzureBastionSubnet"
+  }
+
+  subnet_id                 = each.value.id
   network_security_group_id = azurerm_network_security_group.this.id
 }
